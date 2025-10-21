@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Do not edit directly, this file was auto-generated.
+  
+  Design Tokens - Strings
+  Generated from design tokens
+-->
+<resources>
+    <string name="text_case_none">none</string>
+    <string name="text_decoration_none">none</string>
+    <string name="font_family_display">Bricolage Grotesque</string>
+    <string name="font_family_text">Inter</string>
+</resources>

@@ -16,6 +16,11 @@ export default function composeObjectFormat({ dictionary, options, file }) {
   // Helper to format color values for Compose
   const formatColor = (value) => {
     if (typeof value === 'string') {
+      // If already in Compose format (from transform), return as is
+      if (value.startsWith('Color(')) {
+        return value;
+      }
+      
       if (value.startsWith('#')) {
         let hex = value.replace('#', '').toUpperCase();
         // Handle alpha channel
@@ -35,16 +40,22 @@ export default function composeObjectFormat({ dictionary, options, file }) {
         return `Color(${value})`;
       }
     }
-    return `Color(0xFF000000)`; // fallback
+    
+    // If it's already a number (from transforms), format it
+    if (typeof value === 'number') {
+      return `Color(0x${value.toString(16).padStart(8, '0').toUpperCase()})`;
+    }
+    
+    return value; // Return as is if we don't know the format
   };
 
   // Helper to format number values for Dp
   const formatDp = (value) => {
     if (typeof value === 'string') {
       const numValue = parseFloat(value.replace(/[^0-9.-]/g, ''));
-      return isNaN(numValue) ? 0 : numValue;
+      return isNaN(numValue) ? '0.dp' : `${numValue}.dp`;
     }
-    return typeof value === 'number' ? value : 0;
+    return typeof value === 'number' ? `${value}.dp` : '0.dp';
   };
 
   // Helper to format TextStyle
@@ -122,10 +133,16 @@ export default function composeObjectFormat({ dictionary, options, file }) {
   dictionary.allTokens.forEach(token => {
     const tokenType = token.type || token.$type;
     const name = toPascalCase(token.name);
+    const rawValue = token.value;
     
-    // Skip gradients and shadows (not well-supported in Compose constants)
-    if (typeof token.value === 'string' && 
-        (token.value.includes('linear-gradient') || token.value.includes('deg'))) {
+    // Skip tokens with object or array values (shadows, typography, complex tokens)
+    if (typeof rawValue === 'object' && rawValue !== null) {
+      return;
+    }
+    
+    // Skip gradients (not well-supported in Compose constants)
+    if (typeof rawValue === 'string' && 
+        (rawValue.includes('linear-gradient') || rawValue.includes('deg'))) {
       return;
     }
     
@@ -133,30 +150,33 @@ export default function composeObjectFormat({ dictionary, options, file }) {
     if (tokenType === 'boxShadow' || tokenType === 'shadow') {
       return;
     }
+    
+    // Skip typography (Compose TextStyle is complex and needs manual implementation)
+    if (tokenType === 'typography') {
+      return;
+    }
 
     if (tokenType === 'color') {
       groupedTokens.colors.push({ 
         name, 
-        value: formatColor(token.value) 
+        value: formatColor(rawValue) 
       });
     } else if (tokenType === 'spacing' || tokenType === 'sizing' || 
                tokenType === 'borderRadius' || tokenType === 'dimension' ||
                tokenType === 'borderWidth') {
+      const numValue = typeof rawValue === 'string' ? parseFloat(rawValue.replace(/[^0-9.-]/g, '')) : rawValue;
       groupedTokens.spacing.push({ 
         name, 
-        value: `${formatDp(token.value)}.dp` 
+        value: `${numValue}.dp` 
       });
-    } else if (tokenType === 'typography') {
-      // Skip typography for now - Compose TextStyle is complex and needs manual implementation
-      // Users can use fontSize, fontWeight, etc. separately
-      return;
     } else if (tokenType === 'fontSizes') {
+      const numValue = typeof rawValue === 'string' ? parseFloat(rawValue.replace(/[^0-9.-]/g, '')) : rawValue;
       groupedTokens.fontSize.push({ 
         name, 
-        value: `${formatDp(token.value)}.sp` 
+        value: `${numValue}.sp` 
       });
     } else if (tokenType === 'fontWeights') {
-      const weight = formatDp(token.value);
+      const weight = typeof rawValue === 'string' ? parseFloat(rawValue) : rawValue;
       let composeWeight;
       if (weight <= 150) composeWeight = 100;
       else if (weight <= 250) composeWeight = 200;
@@ -173,9 +193,21 @@ export default function composeObjectFormat({ dictionary, options, file }) {
         value: `FontWeight.W${composeWeight}` 
       });
     } else if (tokenType === 'number') {
+      const numValue = typeof rawValue === 'string' ? parseFloat(rawValue.replace(/[^0-9.-]/g, '')) : rawValue;
       groupedTokens.other.push({ 
         name, 
-        value: formatDp(token.value) 
+        value: numValue 
+      });
+    } else if (tokenType === 'letterSpacing') {
+      // Handle letter spacing specially - skip percentage values
+      if (typeof rawValue === 'string' && rawValue.includes('%')) {
+        // Skip percentage values as they need context
+        return;
+      }
+      const numValue = typeof rawValue === 'string' ? parseFloat(rawValue.replace(/[^0-9.-]/g, '')) : rawValue;
+      groupedTokens.other.push({ 
+        name, 
+        value: `${numValue}.sp` 
       });
     }
   });
@@ -183,27 +215,38 @@ export default function composeObjectFormat({ dictionary, options, file }) {
   // Build output
   let output = `// ${file.destination}
 // Do not edit directly, this file was auto-generated.
+// Generated by custom compose-object format
 
 package ${packageName}
 
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.em
-import android.graphics.Typeface
 
 /**
  * Design tokens for ${className.replace('Tokens', '')} theme
  * 
- * Usage:
- * Text(
- *   "Hello",
- *   color = ${className}.colorsBrand600,
- *   style = ${className}.typographyDisplayLgBold
- * )
+ * This object contains all design tokens including colors, spacing, sizing, 
+ * border radius, font sizes, and font weights. Use these tokens to maintain 
+ * consistency across your Compose application.
+ * 
+ * Usage example:
+ * @sample
+ * Box(
+ *   modifier = Modifier
+ *     .background(${className}.colorsBrand600)
+ *     .padding(${className}.spacing4)
+ *     .size(${className}.sizing48)
+ * ) {
+ *   Text(
+ *     text = "Hello",
+ *     color = ${className}.colorsBaseWhite,
+ *     fontSize = ${className}.fontSizeMd
+ *   )
+ * }
  */
 object ${className} {
 `;
@@ -215,7 +258,7 @@ object ${className} {
     output += `    // ===============================================\n\n`;
     
     groupedTokens.colors.forEach(({ name, value }) => {
-      output += `    val ${name} = ${value}\n`;
+      output += `    val ${name}: Color = ${value}\n`;
     });
   }
 
@@ -223,10 +266,11 @@ object ${className} {
   if (groupedTokens.spacing.length > 0) {
     output += `\n    // ===============================================\n`;
     output += `    // Spacing & Dimension Tokens\n`;
+    output += `    // Values in density-independent pixels (Dp)\n`;
     output += `    // ===============================================\n\n`;
     
     groupedTokens.spacing.forEach(({ name, value }) => {
-      output += `    val ${name} = ${value}\n`;
+      output += `    val ${name}: Dp = ${value}\n`;
     });
   }
 
@@ -237,7 +281,7 @@ object ${className} {
     output += `    // ===============================================\n\n`;
     
     groupedTokens.typography.forEach(({ name, value }) => {
-      output += `    val ${name} = ${value}\n`;
+      output += `    val ${name}: TextStyle = ${value}\n`;
     });
   }
 
@@ -245,10 +289,11 @@ object ${className} {
   if (groupedTokens.fontSize.length > 0) {
     output += `\n    // ===============================================\n`;
     output += `    // Font Size Tokens\n`;
+    output += `    // Values in scalable pixels (Sp)\n`;
     output += `    // ===============================================\n\n`;
     
     groupedTokens.fontSize.forEach(({ name, value }) => {
-      output += `    val ${name} = ${value}\n`;
+      output += `    val ${name}: TextUnit = ${value}\n`;
     });
   }
 
@@ -259,7 +304,7 @@ object ${className} {
     output += `    // ===============================================\n\n`;
     
     groupedTokens.fontWeight.forEach(({ name, value }) => {
-      output += `    val ${name} = ${value}\n`;
+      output += `    val ${name}: FontWeight = ${value}\n`;
     });
   }
 
@@ -267,10 +312,15 @@ object ${className} {
   if (groupedTokens.other.length > 0) {
     output += `\n    // ===============================================\n`;
     output += `    // Other Tokens\n`;
+    output += `    // Miscellaneous numeric values\n`;
     output += `    // ===============================================\n\n`;
     
     groupedTokens.other.forEach(({ name, value }) => {
-      output += `    val ${name} = ${value}\n`;
+      // Try to infer type from value
+      const type = typeof value === 'string' && value.includes('.sp') ? 'TextUnit' :
+                   typeof value === 'string' && value.includes('.dp') ? 'Dp' :
+                   'Int';
+      output += `    val ${name}: ${type} = ${value}\n`;
     });
   }
 
