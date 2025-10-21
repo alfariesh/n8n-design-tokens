@@ -1,0 +1,13 @@
+{
+  "name": "design-tokens",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Design tokens build configuration",
+  "main": "build.js",
+  "scripts": {
+    "build": "node build.js"
+  },
+  "dependencies": {
+    "style-dictionary": "^4.0.0"
+  }
+}
