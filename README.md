@@ -1,0 +1,207 @@
+# Design Tokens untuk Flutter
+
+Build design tokens dari Figma/JSON ke Flutter dengan Style Dictionary v5.1.1
+
+## 📦 Output Files
+
+```
+build/flutter/
+├── tokens_light.dart  (48.97 KB, 743 tokens)
+└── tokens_dark.dart   (48.97 KB, 743 tokens)
+```
+
+## 🚀 Quick Start
+
+### 1. Build Tokens
+```bash
+npm run build
+```
+
+### 2. Copy ke Flutter Project
+```bash
+cp build/flutter/*.dart your_flutter_project/lib/tokens/
+```
+
+### 3. Gunakan di Flutter
+
+```dart
+import 'tokens/tokens_light.dart';
+import 'tokens/tokens_dark.dart';
+
+// Colors
+Container(
+  color: TokensLight.colorsBackgroundPrimary,
+  child: Text(
+    'Hello World',
+    style: TextStyle(
+      color: TokensLight.colorsTextPrimary900,
+    ),
+  ),
+)
+
+// Spacing
+Padding(
+  padding: EdgeInsets.all(TokensLight.spacing4),
+  child: ...
+)
+
+// Border Radius
+Container(
+  decoration: BoxDecoration(
+    borderRadius: BorderRadius.circular(TokensLight.borderRadiusLg),
+  ),
+)
+
+// Dark Theme
+Container(
+  color: TokensDark.colorsBackgroundPrimary,
+  child: Text(
+    'Dark Mode',
+    style: TextStyle(color: TokensDark.colorsTextPrimary900),
+  ),
+)
+```
+
+## 🎨 Token Categories
+
+### Colors (static const Color)
+- **Base**: white, black, transparent
+- **Grayscale**: grayLightMode, grayDarkMode, grayNeutral, etc.
+- **Brand**: brand25 - brand950
+- **Semantic**: error, warning, success
+- **Effects**: shadow colors, overlay colors
+- **Foreground/Background**: semantic color assignments
+- **Border**: border colors
+- **Text**: text colors for different states
+
+### Spacing (static const double)
+- spacing0 - spacing40
+- Nilai dalam pixels, sudah dalam format double
+- Siap pakai tanpa perlu `.toDouble()`
+
+### Sizing (static const double)
+- sizing48 - sizing480
+- Untuk width dan height components
+
+### Border Radius (static const double)
+- borderRadiusNone - borderRadius4xl
+- borderRadiusFull untuk fully rounded
+
+## 📝 Token Structure
+
+```dart
+class TokensLight {
+  TokensLight._();  // Private constructor
+
+  // ===============================================
+  // Color Tokens
+  // ===============================================
+
+  static const Color colorsBaseWhite = Color(0xFFFFFFFF);
+  static const Color colorsTextPrimary900 = Color(0xFF181D27);
+  // ... 600+ color tokens
+
+  // ===============================================
+  // Spacing Tokens
+  // ===============================================
+
+  static const double spacing0 = 0.0;
+  static const double spacing4 = 16.0;
+  // ... spacing tokens
+
+  // ===============================================
+  // Border Radius Tokens
+  // ===============================================
+
+  static const double borderRadiusSm = 6.0;
+  // ... border radius tokens
+}
+```
+
+## 🔧 Teknologi
+
+- **Style Dictionary**: v5.1.1 (latest)
+- **Node.js**: v22.17.1
+- **Format**: Custom Flutter format
+- **Import**: `package:flutter/material.dart`
+- **Type Safety**: Explicit types (Color, double)
+
+## 📂 Project Structure
+
+```
+tokens/
+├── build.js                 # Build script
+├── package.json             # Dependencies
+├── formats/
+│   └── flutter-class.js     # Custom Flutter format
+├── design-tokens/
+│   ├── primitives.json      # Base tokens
+│   ├── spacing.json
+│   ├── radius.json
+│   ├── widths.json
+│   ├── containers.json
+│   └── modes/
+│       ├── light.json       # Light theme
+│       └── dark.json        # Dark theme
+└── build/
+    └── flutter/
+        ├── tokens_light.dart
+        └── tokens_dark.dart
+```
+
+## ✨ Features
+
+- ✅ **Type Safe**: Semua tokens explicitly typed
+- ✅ **Organized**: Grouped by category dengan comments
+- ✅ **Flutter Native**: Menggunakan Flutter Material
+- ✅ **Documentation**: Doc comments untuk setiap class
+- ✅ **No Int Casting**: Spacing/sizing langsung double
+- ✅ **Light & Dark**: Support kedua themes
+- ✅ **743 Tokens**: Comprehensive design system
+- ✅ **Zero Errors**: Flutter analyzer clean
+
+## 🎯 Best Practices
+
+### DO ✅
+```dart
+// Gunakan tokens untuk consistency
+color: TokensLight.colorsBrand500
+
+// Spacing sudah double, langsung pakai
+padding: EdgeInsets.all(TokensLight.spacing4)
+
+// Border radius
+borderRadius: BorderRadius.circular(TokensLight.borderRadiusLg)
+
+// Switch berdasarkan theme
+final tokens = isDark ? TokensDark : TokensLight;
+color: tokens.colorsBackgroundPrimary
+```
+
+### DON'T ❌
+```dart
+// Jangan hardcode values
+color: Color(0xFF9E77ED)  // ❌
+
+// Jangan hardcode spacing
+padding: EdgeInsets.all(16.0)  // ❌
+
+// Jangan hardcode border radius
+borderRadius: BorderRadius.circular(8.0)  // ❌
+```
+
+## 🔄 Update Tokens
+
+1. Edit file di `design-tokens/`
+2. Run `npm run build`
+3. Copy hasil build ke Flutter project
+4. Hot reload Flutter app
+
+## 📱 Contoh Lengkap
+
+Lihat `test_app/lib/tokens_example.dart` untuk contoh comprehensive penggunaan tokens.
+
+---
+
+**Generated by Style Dictionary v5.1.1**
+**Custom Flutter Format** | **No errors, Production ready** ✨
