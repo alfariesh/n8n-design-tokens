@@ -3,8 +3,7 @@ name: Build & Deploy Design Tokens
 on:
   push:
     branches: [master]
-    paths:
-      - 'design-tokens/**'
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
