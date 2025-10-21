@@ -1,4 +1,4 @@
-# Design Tokens Build Configuration
+# Design Tokens Build Configuration Test
 
 This folder contains build configuration files for design tokens.
 
